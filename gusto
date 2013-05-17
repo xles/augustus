@@ -1,0 +1,8 @@
+#!/bin/sh
+if [ "$1"  = "run" ]; then
+	php -S localhost:8000 -t build/
+elif [ "$1"  = "publish" ]; then
+	echo "This is where the rsync should go"
+else
+	./bin/gusto.php "$@"
+fi
