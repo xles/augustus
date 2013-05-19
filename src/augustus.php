@@ -39,7 +39,49 @@ class Augustus {
 	}
 	public function build()
 	{
-		exit("EHRMERGERD, BUILDING SHIT!\n");
+		//$files = $this->write_checksums();
+		$files = $this->checksum();
+		$buffer = file_get_contents('./posts/blubb.txt');
+		$site = file_get_contents('./src/template/layout.html');
+		$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
+		$post = preg_split($pattern, $buffer);
+
+		//var_dump($files);
+
+		$content = $post[0];
+		$json = (array) json_decode($post[1]);
+		$page_title = $json['title'];
+		
+		eval('?>'.$site);
+
+		//exit ($buffer);
+	}
+	public function write_checksums()
+	{
+		$files = scandir('./posts/');
+		foreach ($files as $file) {
+			if ($file[0] != '.')
+				$tmp[$file] = md5_file('./posts/'.$file);
+		}
+		$json = json_encode($tmp, JSON_PRETTY_PRINT);
+		if (file_put_contents('./posts/.checksums', $json))
+			return true;
+		else
+			return false;
+
+	}
+	public function checksum()
+	{
+		$files = file_get_contents('./posts/.checksums');
+		$files = (array) json_decode($files);
+		
+		$rebuild = false;
+		foreach ($files as $file => $checksum) {
+			if($file[0] != '.')
+				if($checksum != md5_file('./posts/'.$file))
+					$rebuild[] = $file;
+		}
+		return $rebuild;
 	}
 	public function rm_post($var)
 	{
