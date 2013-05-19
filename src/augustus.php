@@ -1,8 +1,12 @@
 <?php
 
 namespace Augustus;
+		require_once('./src/markdown.php');
+		use \Michelf\Markdown;
 
 class Augustus {
+	private $options = ['forced' => false];
+
 	public function new_post()
 	{
 		echo "Creating a new post\nTitle: ";
@@ -39,24 +43,32 @@ class Augustus {
 	}
 	public function build()
 	{
-		//$files = $this->write_checksums();
 		$files = $this->write_index();
+		$files = $this->checksum();
+		$this->render_page();
+		//$files = $this->write_checksums();
+		echo "Finished building site.\n";
+	}
+	public function render_page()
+	{
 		$buffer = file_get_contents('./posts/blubb.txt');
-		$site = file_get_contents('./src/template/layout.html');
 		$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
 		$post = preg_split($pattern, $buffer);
 
-		//var_dump($files);
-
-		$content = $post[0];
+		$content = Markdown::defaultTransform($post[0]);
 		$json = (array) json_decode($post[1]);
 		$page_title = $json['title'];
 		
-		eval('?>'.$site);
+		ob_start();
+		include_once('./src/template/layout.html');
+		$site = ob_get_contents();
+		ob_end_clean();
 
+		file_put_contents('./build/index.html', $site);
 	}
 	public function write_index()
 	{
+		echo "Writing indicies ";
 		$files = scandir('./posts/');
 		foreach ($files as $file) {
 			if ($file[0] != '.') {
@@ -70,9 +82,12 @@ class Augustus {
 				foreach ($json['tags'] as $tag) {
 					$tags[$tag]['slug'] = $this->slug($tag);
 					$tags[$tag]['files'][] = $file;
+					echo '.';
 				}
+				echo '.';
 			}
 		}
+		echo " OK\n";
 		$cats = json_encode($cats, JSON_PRETTY_PRINT);
 		$tags = json_encode($tags, JSON_PRETTY_PRINT);
 		if (file_put_contents('./posts/.categories', $cats)  &&
@@ -97,15 +112,38 @@ class Augustus {
 	}
 	public function checksum()
 	{
+		if ($this->options['forced'] == true) {
+			echo "Skipping checksums, build forced.\n";
+			$tmp = scandir('./posts/');
+			foreach ($tmp as $file) {
+				if ($file[0] != '.') {
+					$rebuild[] = $file;
+				}
+			}
+			return $rebuild;
+		}
+
 		$files = file_get_contents('./posts/.checksums');
 		$files = (array) json_decode($files);
-		
+
 		$rebuild = false;
-		foreach ($files as $file => $checksum) {
-			if($file[0] != '.')
-				if($checksum != md5_file('./posts/'.$file))
-					$rebuild[] = $file;
+		$tmp = array_diff(scandir('./posts/'), array_keys($files));
+		echo "Checking for new posts ";
+		foreach ($tmp as $file) {
+			if ($file[0] != '.') {
+				$rebuild[] = $file;
+				echo '.';
+			}
 		}
+		echo "\n";
+
+		echo "Checking checksums for updated posts ";
+		foreach ($files as $file => $checksum) {
+			if($checksum != md5_file('./posts/'.$file))
+				$rebuild[] = $file;
+			echo '.';
+		}
+		echo "\n";
 		return $rebuild;
 	}
 	public function rm_post($var)
@@ -132,8 +170,8 @@ class Augustus {
 
 	public function set_options($options)
 	{
-//		if (!in_array('a', $options))
-//			exit ("Invalid options. See `help` for details.\n");
+		if (in_array('f', $options))
+			$this->options['forced'] = true;
 	}
 	private function slug($str)
 	{
