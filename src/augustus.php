@@ -37,6 +37,10 @@ class Augustus {
 
 		exit("Blog post saved as $filename.\n");
 	}
+	public function build()
+	{
+		exit("EHRMERGERD, BUILDING SHIT!\n");
+	}
 	public function rm_post($var)
 	{
 
@@ -59,6 +63,11 @@ class Augustus {
 
 	}
 
+	public function set_options($options)
+	{
+//		if (!in_array('a', $options))
+//			exit ("Invalid options. See `help` for details.\n");
+	}
 	private function slug($str)
 	{
 		$str = strtolower($str);

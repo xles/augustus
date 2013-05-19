@@ -20,22 +20,27 @@ if (in_array('--version', $argv))
 	exit($version);
 
 if ($argc == 2) {
-	switch ($argv[1]) {
-		case '-h':
-		case 'help':
-			print_help();
-			break;
+	if ($argv[1] == 'help')
+		print_help();
+	$options = [];
+	$method = $argv[1];
+	$args = [];
+} else {
+	if ($argv[1][0] == '-') {
+		$options = array_slice(str_split($argv[1]), 1);
+		$method = implode('_',array_slice($argv, 2, 2));
+		$args = array_slice($argv, 4);
+	} else {
+		$options = [];
+		$method = implode('_',array_slice($argv, 1, 2));
+		$args = array_slice($argv, 3);
 	}
 }
 
-if ($argv[1][0] == '-') {
-	$options = array_slice(str_split($argv[1]), 1);
-	$method = implode('_',array_slice($argv, 2, 2));
-	$args = array_slice($argv, 4);
-} else {
-	$method = implode('_',array_slice($argv, 1, 2));
-	$args = array_slice($argv, 3);
-}
+if (in_array('h', $options))
+	print_help();
+
+$gusto->set_options($options);
 
 if (method_exists($gusto, $method)) {
 	$gusto->$method($args);
@@ -60,11 +65,12 @@ function print_help()
 Usage: gusto [options] <command> [<args>].
 
 Available commands:
-   add    Adds new entry to 
-   rm     Remove an entry from
-   edit   Alters an entry in
-   list   Lists entries in
-   help   Prints this help file.
+   add     Adds new entry to 
+   rm      Remove an entry from
+   edit    Alters an entry in
+   list    Lists entries in
+   build   Generates the static pages.
+   help    Prints this help file.
 
 Examples:
    gusto add post
