@@ -8,10 +8,10 @@ class Augustus {
 		echo "Creating a new post\nTitle: ";
 		$title = trim(fgets(STDIN));
 
-		echo "Publish date [".date('Ymd')."]: ";
+		echo "Publish date [".date('Y-m-d')."]: ";
 		$date = trim(fgets(STDIN));
 		if(empty($date))
-			$date = date('Ymd');
+			$date = date('Y-m-d');
 
 		echo "Category [Uncategorized]: ";
 		$category = trim(fgets(STDIN));
@@ -31,7 +31,7 @@ class Augustus {
 		$md .= "---EOF---\n";
 		$md .= json_encode($json, JSON_PRETTY_PRINT);
 		
-		$filename = 'posts/'.$date.'.'.$json['slug'].'.md';
+		$filename = 'posts/'.$date.'_'.$json['slug'].'.md';
 		file_put_contents($filename, $md);
 		system('subl -w ./'.$filename);
 
@@ -40,7 +40,7 @@ class Augustus {
 	public function build()
 	{
 		//$files = $this->write_checksums();
-		$files = $this->checksum();
+		$files = $this->write_index();
 		$buffer = file_get_contents('./posts/blubb.txt');
 		$site = file_get_contents('./src/template/layout.html');
 		$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
@@ -54,6 +54,32 @@ class Augustus {
 		
 		eval('?>'.$site);
 
+	}
+	public function write_index()
+	{
+		$files = scandir('./posts/');
+		foreach ($files as $file) {
+			if ($file[0] != '.') {
+				$tmp = file_get_contents('./posts/'.$file);
+				$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
+				$post = preg_split($pattern, $tmp);
+				$json = (array) json_decode($post[1]);
+				$cats[$json['category']]['slug'] = 
+					$this->slug($json['category']);
+				$cats[$json['category']]['files'][] = $file;
+				foreach ($json['tags'] as $tag) {
+					$tags[$tag]['slug'] = $this->slug($tag);
+					$tags[$tag]['files'][] = $file;
+				}
+			}
+		}
+		$cats = json_encode($cats, JSON_PRETTY_PRINT);
+		$tags = json_encode($tags, JSON_PRETTY_PRINT);
+		if (file_put_contents('./posts/.categories', $cats)  &&
+			file_put_contents('./posts/.tags', $tags))
+			return true;
+		else
+			return false;		
 	}
 	public function write_checksums()
 	{
@@ -113,7 +139,7 @@ class Augustus {
 	{
 		$str = strtolower($str);
 		$str = str_replace(' ', '-', $str);
-		$str = preg_replace('/[^a-z0-9|\.|\-|_]/','',$str);
+		$str = preg_replace('/[^a-z0-9|\-|_]/','',$str);
 		$words = explode('-',$str);
 //		$str = substr($str, 0, $this->config->get('alias_length'));
 		if(count($words) >= 3) {
