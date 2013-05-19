@@ -54,7 +54,6 @@ class Augustus {
 		
 		eval('?>'.$site);
 
-		//exit ($buffer);
 	}
 	public function write_checksums()
 	{
