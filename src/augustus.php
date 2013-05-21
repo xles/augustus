@@ -61,7 +61,8 @@ class Augustus {
 
 		$md  = '#'.$title."\n\nPost goes here\n\n";
 		$md .= "---EOF---\n";
-		$md .= json_encode($json, JSON_PRETTY_PRINT);
+		$md .= json_encode($json, JSON_PRETTY_PRINT
+					| JSON_UNESCAPED_SLASHES);
 		
 		$filename = 'pages/'.$json['slug'].'.md';
 		file_put_contents($filename, $md);
