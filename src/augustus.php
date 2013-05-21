@@ -6,7 +6,8 @@ require_once('./src/markdown.php');
 use \Michelf\Markdown;
 
 class Augustus {
-	private $options = ['forced' => false];
+	private $options = [	'forced' => false,
+				'clean'  => false];
 
 	public function new_post()
 	{
@@ -267,6 +268,9 @@ class Augustus {
 	{
 		if (in_array('f', $options))
 			$this->options['forced'] = true;
+		if (in_array('c', $options))
+			$this->options['clean'] = true;
+
 	}
 	private function slug($str)
 	{
