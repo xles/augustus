@@ -72,6 +72,11 @@ Available commands:
    build   Generates the static pages.
    help    Prints this help file.
 
+Options:
+   -f   Forced build.  Re-generates all pages regardless of checksum.
+   -c   Clean build.  Wipes the build/ directory clean prior to generating
+        static pages.
+
 Examples:
    gusto add post
 ';
