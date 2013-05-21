@@ -74,9 +74,9 @@ class Augustus {
 	{
 		$this->copy_site_assets();
 		
-		$files = $this->write_index();
-		$files = $this->checksum();
-		var_dump($files);
+		$files = $this->write_indicies();
+		$files = $this->checksum('posts');
+
 		echo "Rendering pages ";
 		foreach ($files as $file) {
 			$this->render_page($file);
@@ -84,7 +84,7 @@ class Augustus {
 		}
 		echo "\n";
 		
-		$files = $this->write_checksums();
+		$files = $this->write_checksums('posts');
 		echo "Finished building site.\n";
 	}
 	private function copy_site_assets()
@@ -155,7 +155,7 @@ class Augustus {
 
 		file_put_contents($dest.'.html', $site);
 	}
-	public function write_index()
+	public function write_indicies()
 	{
 		echo "Writing indicies ";
 		$files = scandir('./posts/');
@@ -185,19 +185,19 @@ class Augustus {
 		else
 			return false;		
 	}
-	public function write_checksums()
+	public function write_checksums($dir)
 	{
 		echo "Writing checksums ";
-		$files = scandir('./posts/');
+		$files = scandir("./$dir/");
 		foreach ($files as $file) {
 			if ($file[0] != '.') {
-				$tmp[$file] = md5_file('./posts/'.$file);
+				$tmp[$file] = md5_file("./$dir/$file");
 				echo '.';
 			}
 		}
 		echo "\n";
 		$json = json_encode($tmp, JSON_PRETTY_PRINT);
-		if (file_put_contents('./posts/.checksums', $json))
+		if (file_put_contents("./$dir/.checksums", $json))
 			return true;
 		else
 			return false;
@@ -241,7 +241,9 @@ class Augustus {
 	}
 	public function rm_post($var)
 	{
-
+#		unlink($file);
+		$this->write_checksums();
+		$this->write_indicies();
 	}
 	public function edit_post($var)
 	{
