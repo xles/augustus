@@ -30,6 +30,10 @@ if ($argc == 2) {
 		$options = array_slice(str_split($argv[1]), 1);
 		$method = implode('_',array_slice($argv, 2, 2));
 		$args = array_slice($argv, 4);
+	} else if ($argv[1] == 'configure') {
+		$options = [];
+		$method = $argv[1];
+		$args = $argv[2];
 	} else {
 		$options = [];
 		$method = implode('_',array_slice($argv, 1, 2));

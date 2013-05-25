@@ -9,6 +9,48 @@ class Augustus {
 	private $options = [	'forced' => false,
 				'clean'  => false];
 
+	private $config = [];
+
+	public function __construct()
+	{
+		$config = $this->read_config();
+		$config['template'] = './templates/'.$config['template'];
+		$this->config = $config;
+	}
+	private function read_config()
+	{
+		$config = file_get_contents('.config');
+		$config = (array) json_decode($config);
+		return $config;
+	}
+	public function configure($args)
+	{
+		$config = $this->read_config();
+		if (empty($args)) {
+			printf("Current configuration:\n");
+			foreach ($config as $key => $value) {
+				printf("%-15s = %s\n", $key, $value);
+			}
+		} else {
+			if (array_key_exists($args, $config)) {
+				printf("New value for %s [%s]: ", 
+					$args, $config[$args]);
+				$conf = trim(fgets(STDIN));
+				if(empty($conf))
+					$conf = $config[$args];
+				$config[$args] = $conf;
+				$config = json_encode($config, 
+						  JSON_PRETTY_PRINT
+						| JSON_UNESCAPED_SLASHES);
+				file_put_contents('.config', $config);
+
+				printf("`%s` set to '%s'.\n", $args, $conf);
+			} else {
+				echo "Invalid configuration node.\n";
+			}
+		}
+	}
+
 	public function new_post()
 	{
 		echo "Creating a new post\nTitle: ";
@@ -107,7 +149,7 @@ class Augustus {
 		$files = scandir($dir);
 		foreach ($files as $file) {
 			if ($file[0] != '.')
-				echo '';
+				echo '.';
 				//unlink($dir.$file);
 		}
 
@@ -115,13 +157,14 @@ class Augustus {
 	private function copy_site_assets()
 	{
 		echo "Copying layout assets to build directory ";
-		$files = scandir('./src/template');
+		$template = $this->config['template'];
+		$files = scandir($template);
 		foreach ($files as $file) {
 			if ($file[0] != '.')
-			if (is_dir('./src/template/'.$file)) {
+			if (is_dir("$template/$file".$file)) {
 					if (!file_exists("./build/$file"))
 						mkdir("./build/$file");
-				$this->copy_dir('./src/template/'.$file, 
+				$this->copy_dir("$template/$file", 
 					'./build/'.$file);
 				echo '.';
 			}
@@ -162,7 +205,7 @@ class Augustus {
 		$content = Markdown::defaultTransform($content);
 		$json = (array) json_decode($json);
 		$page_title = $json['title'];
-		$layout = './src/template/'.$json['layout'].'.html';
+		$layout = $this->config['template'].'/'.$json['layout'].'.html';
 
 		switch ($json['layout']) {
 			case 'post':
@@ -174,7 +217,7 @@ class Augustus {
 		}
 		
 		ob_start();
-		include_once('./src/template/layout.html');
+		include_once($this->config['template'].'/layout.html');
 		$site = ob_get_contents();
 		ob_end_clean();
 
