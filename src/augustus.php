@@ -136,14 +136,18 @@ class Augustus {
 
 		$json = file_get_contents('./posts/.tags');
 		$json = (array) json_decode($json);
-		foreach ($json as $tag) {
-			$this->render_index('tag', (array) $tag);
+		foreach ($json as $tag => $vars) {
+			$vars = (array) $vars;
+			$vars['title'] = $tag;
+			$this->render_index('tag', (array) $vars);
 		}
 
 		$json = file_get_contents('./posts/.categories');
 		$json = (array) json_decode($json);
-		foreach ($json as $tag) {
-			$this->render_index('category', (array) $tag);
+		foreach ($json as $tag => $vars) {
+			$vars = (array) $vars;
+			$vars['title'] = $tag;
+			$this->render_index('category', (array) $vars);
 		}
 		
 		$files = $this->write_checksums('posts');
@@ -211,20 +215,27 @@ class Augustus {
 				$dest .= 'index.html';
 				break;
 			case 'tag':
+				if (!file_exists($dest.'tag'))
+					mkdir($dest.'tag');
+
 				$dest .= "tag/{$var['slug']}.html";
 				$json = file_get_contents('./posts/.tags');
 				$json = (array) json_decode($json);
+				$tag = $var['title'];
 				break;
 			case 'category':
+				if (!file_exists($dest.'category'))
+					mkdir($dest.'category');
+
 				$dest .= "category/{$var['slug']}.html";
 				$json = file_get_contents('./posts/.categories');
 				$json = (array) json_decode($json);
+				$category = $var['title'];
 				break;
 		}
 
 		$posts = $this->read_index();
 
-		//var_dump($json);
 		if ($type != 'index') {
 			foreach ($var['files'] as $file) {
 				$tmp[$file] = $posts[$file];
