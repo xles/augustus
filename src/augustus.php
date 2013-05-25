@@ -121,17 +121,20 @@ class Augustus {
 			$this->clean_build();
 		}
 		
-
 		$this->copy_site_assets();
-		$files = $this->write_indicies();
-		$files = $this->checksum('posts');
+		
+		$this->write_indicies();
+		
 
+		$pages = $this->checksum('pages');
+		$posts = $this->checksum('posts');
 		echo "Rendering pages ";
+		$files = array_merge($posts, $pages);
 		foreach ($files as $file) {
 			$this->render_page($file);
 			echo '.';
 		}
-		echo "\nRendering index ";
+		echo " OK\nRendering index ";
 		$this->render_index('index');
 
 		$json = file_get_contents('./posts/.tags');
@@ -149,6 +152,7 @@ class Augustus {
 			$vars['title'] = $tag;
 			$this->render_index('category', (array) $vars);
 		}
+		echo " OK\n";
 		
 		$files = $this->write_checksums('posts');
 		echo "Finished building site.\n";
@@ -205,6 +209,22 @@ class Augustus {
 			}
 		}
 	}
+	private function output_file($filename, $content)
+	{
+		$path = pathinfo($filename);
+		if ($path['filename'] == 'index')  {
+			$filename .= '';
+		} else if ($this->config['pretty_urls'] == 'enabled') {
+			$filename .= '/index.html';
+		} else {
+			$filename .= '.html';
+		}
+		$path = pathinfo($filename);
+		if (!file_exists($path['dirname']))
+			mkdir($path['dirname'], 0777, true);
+
+		file_put_contents($filename, $content);		
+	}
 	private function render_index($type, $var = '')
 	{
 		$dest = './build/';
@@ -215,19 +235,13 @@ class Augustus {
 				$dest .= 'index.html';
 				break;
 			case 'tag':
-				if (!file_exists($dest.'tag'))
-					mkdir($dest.'tag');
-
-				$dest .= "tag/{$var['slug']}.html";
+				$dest .= "tag/{$var['slug']}";
 				$json = file_get_contents('./posts/.tags');
 				$json = (array) json_decode($json);
 				$tag = $var['title'];
 				break;
 			case 'category':
-				if (!file_exists($dest.'category'))
-					mkdir($dest.'category');
-
-				$dest .= "category/{$var['slug']}.html";
+				$dest .= "category/{$var['slug']}";
 				$json = file_get_contents('./posts/.categories');
 				$json = (array) json_decode($json);
 				$category = $var['title'];
@@ -248,8 +262,8 @@ class Augustus {
 		$site = ob_get_contents();
 		ob_end_clean();
 
-		file_put_contents($dest, $site);
-
+		$this->output_file($dest, $site);
+		echo '.';
 	}
 	private function read_index()
 	{
@@ -294,7 +308,7 @@ class Augustus {
 		//var_dump($date, $slug, $year, $month, $day);
 
 
-		$buffer = file_get_contents('./posts/'.$file);
+		$buffer = file_get_contents($file);
 		$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
 		list($post, $json) = preg_split($pattern, $buffer);
 
@@ -304,23 +318,24 @@ class Augustus {
 		$json = (array) json_decode($json);
 		$page_title = $json['title'];
 		$layout = $this->config['template'].'/'.$json['layout'].'.html';
+		if ($this->config['comments'] == 'intensedebate')
+			$intensedebate = $this->config['intensedebate'];
 
 		switch ($json['layout']) {
 			case 'post':
 				$dest .= "$year/$month/$slug";
 				break;
 			case 'page':
-				$dest .= $json['path']."/$slug";
+				$dest .= $json['path']."$slug";
 				break;
 		}
 		
-
 		ob_start();
 		include($this->config['template'].'/layout.html');
 		$site = ob_get_contents();
 		ob_end_clean();
 
-		file_put_contents($dest.'.html', $site);
+		$this->output_file($dest, $site);
 	}
 	public function write_indicies()
 	{
@@ -373,28 +388,29 @@ class Augustus {
 			return false;
 
 	}
-	public function checksum()
+	public function checksum($path)
 	{
+		$path = "./$path/";
 		$rebuild = [];
 		if ($this->options['forced'] == true) {
 			echo "Skipping checksums, build forced.\n";
-			$tmp = scandir('./posts/');
+			$tmp = scandir($path);
 			foreach ($tmp as $file) {
 				if ($file[0] != '.') {
-					$rebuild[] = $file;
+					$rebuild[] = $path.$file;
 				}
 			}
 			return $rebuild;
 		}
 
-		$files = file_get_contents('./posts/.checksums');
+		$files = file_get_contents($path.'.checksums');
 		$files = (array) json_decode($files);
 
-		$tmp = array_diff(scandir('./posts/'), array_keys($files));
+		$tmp = array_diff(scandir($path), array_keys($files));
 		echo "Checking for new posts ";
 		foreach ($tmp as $file) {
 			if ($file[0] != '.') {
-				$rebuild[] = $file;
+				$rebuild[] = $path.$file;
 				echo '.';
 			}
 		}
@@ -402,8 +418,8 @@ class Augustus {
 
 		echo "Checking checksums for updated posts ";
 		foreach ($files as $file => $checksum) {
-			if($checksum != md5_file('./posts/'.$file))
-				$rebuild[] = $file;
+			if($checksum != md5_file($path.$file))
+				$rebuild[] = $path.$file;
 			echo '.';
 		}
 		echo "\n";
