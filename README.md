@@ -42,15 +42,15 @@ with Augustus as a submodule.
 
 * `$ cd .gusto/`
 
-* * `$ ./gusto configure` edit the options you want.
+  * `$ ./gusto configure` edit the options you want.
 
-* * `$ ./gusto new post` follow the CLI prompts.
+  * `$ ./gusto new post` follow the CLI prompts.
 
-* * `$ ./gusto build`
+  * `$ ./gusto build`
 
-* * `$ ./gusto publish`
+  * `$ ./gusto publish`
 
-* * `$ cd ..`
+  * `$ cd ..`
 
 * `git add .`
 
