@@ -73,8 +73,14 @@ class Augustus {
 	}
 	public function build()
 	{
-		$this->copy_site_assets();
+		if ($this->options['clean'] == true
+			&& $this->options['forced'] == true) {
+			echo "Cleaning up build directory.\n";
+			$this->clean_build();
+		}
 		
+
+		$this->copy_site_assets();
 		$files = $this->write_indicies();
 		$files = $this->checksum('posts');
 
@@ -87,6 +93,24 @@ class Augustus {
 		
 		$files = $this->write_checksums('posts');
 		echo "Finished building site.\n";
+	}
+
+	private function clean_build() 
+	{
+		//$dir = $this->build_dir;
+		$dir = './build/';
+//		$dir = '../';
+
+		if ($dir == '../' || $dir == './../') {
+			echo "WARNING: Cleaning up in Parent directory!\n";
+		}
+		$files = scandir($dir);
+		foreach ($files as $file) {
+			if ($file[0] != '.')
+				echo '';
+				//unlink($dir.$file);
+		}
+
 	}
 	private function copy_site_assets()
 	{
