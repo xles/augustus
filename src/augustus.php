@@ -11,11 +11,16 @@ class Augustus {
 
 	private $config = [];
 
+	private $tags = [];
+	private $categories = [];
+
 	public function __construct()
 	{
 		$config = $this->read_config();
 		$config['template'] = './templates/'.$config['template'];
 		$this->config = $config;
+		$this->tags = $this->tag_list('tags');
+		$this->categories = $this->tag_list('categories');
 	}
 	private function read_config()
 	{
@@ -158,6 +163,74 @@ class Augustus {
 		echo "Finished building site.\n";
 	}
 
+	private function tag_list($type) 
+	{
+		$json = file_get_contents("./posts/.$type");
+		$json = (array) json_decode($json);
+		foreach ($json as $tag => $vars) {
+			$tags[$tag] = (array) $vars;
+			$tags[$tag]['title'] = $tag;
+/*			switch ($type) {
+				case 'tags':
+				 	$url = '/tag/';
+				 	break;
+				case 'categories':
+					$url = '/category/';
+			}
+			$url .= $tags[$tag]['slug'];
+			if ($this->config['pretty_urls'] == 'enabled')
+				$url .= '/';
+			else
+				$url .= '.html';
+*/
+			//$tags[$tag]['url'] = $url;
+			//$tags[$tag]['url'] = $this->format_url($tag, $type);
+		}
+		natcasesort($tags);
+		return $tags;
+	}
+
+	private function format_url($meta, $type = 'post')
+	{
+		unset($url);
+		switch($type) {
+			case 'post':
+				list (	$meta['year'], 
+					$meta['month'], 
+					$meta['day'] 
+				) = explode ('-', $meta['pubdate']);
+					
+				$format = explode('/', $this->config['url_format']);
+
+				foreach($format as $element) {
+					$url .= '/'.$meta[$element];
+				}
+				break;
+			case 'page':
+				$url = $meta['path'];			
+				break;
+			case 'category':
+			//var_dump($meta);
+				$meta = $this->categories[$meta];
+				$url = '/category/'.$meta['slug'];
+				break;
+			case 'tag':
+				$meta = $this->tags[$meta];
+				$url = '/tag/'.$meta['slug'];
+				break;
+		}
+		
+		if ($this->config['pretty_urls'] == 'enabled') {
+			$url .= '/';
+		} else {
+			$url .= '.html';
+		}
+
+		$meta['url'] = $url;
+
+		return $meta['url'];
+	}
+
 	private function clean_build() 
 	{
 		//$dir = $this->build_dir;
@@ -217,7 +290,8 @@ class Augustus {
 		} else if ($this->config['pretty_urls'] == 'enabled') {
 			$filename .= '/index.html';
 		} else {
-			$filename .= '.html';
+			$filename .= '';//'.html';
+//			echo $filename."\n";
 		}
 		$path = pathinfo($filename);
 		if (!file_exists($path['dirname']))
@@ -225,23 +299,24 @@ class Augustus {
 
 		file_put_contents($filename, $content);		
 	}
-	private function render_index($type, $var = '')
+	private function render_index($type, $var = [])
 	{
-		$dest = './build/';
+		$dest = './build';
 		$layout = $this->config['template'].'/'.$type.'.html';
 
 		switch ($type) {
 			case 'index':
-				$dest .= 'index.html';
+				$dest .= '/index.html';
 				break;
 			case 'tag':
-				$dest .= "tag/{$var['slug']}";
+				$dest .= $this->format_url($var['title'], 'tag');
 				$json = file_get_contents('./posts/.tags');
 				$json = (array) json_decode($json);
 				$tag = $var['title'];
 				break;
 			case 'category':
-				$dest .= "category/{$var['slug']}";
+				var_dump($var['title']);
+				$dest .= $this->format_url($var['title'], 'category');
 				$json = file_get_contents('./posts/.categories');
 				$json = (array) json_decode($json);
 				$category = $var['title'];
@@ -249,6 +324,9 @@ class Augustus {
 		}
 
 		$posts = $this->read_index();
+
+		$tags = $this->tags;
+		$categories = $this->categories;
 
 		if ($type != 'index') {
 			foreach ($var['files'] as $file) {
@@ -262,6 +340,7 @@ class Augustus {
 		$site = ob_get_contents();
 		ob_end_clean();
 
+//		echo "$dest\n";
 		$this->output_file($dest, $site);
 		echo '.';
 	}
@@ -273,7 +352,7 @@ class Augustus {
 			unset($tags);
 			
 			$posts[$file] = (array) $data;
-
+/*
 			list(	$posts[$file]['year'], 
 				$posts[$file]['month'], 
 				$posts[$file]['day'] 
@@ -284,14 +363,16 @@ class Augustus {
 				$posts[$file]['url'] .= '/'.$posts[$file][$element];
 			}
 			$posts[$file]['url'] .= '.html';
-
+*/
+			$posts[$file]['url'] = $this->format_url($posts[$file]);
 			$posts[$file]['category'] = 
-				sprintf('<a href="/category/%s.html">%s</a>', 
-					$this->slug($posts[$file]['category']), 
-					$posts[$file]['category']);
+				sprintf('<a href="%s">%s</a>', 
+					$this->format_url($posts[$file], 'category'), 
+					$posts[$file]['category']
+				);
 			foreach ($posts[$file]['tags'] as $tag) {
-				$tags[] = sprintf('<a href="/tag/%s.html">%s</a>', 
-					$this->slug($tag), $tag);
+				$tags[] = sprintf('<a href="%s">%s</a>', 
+					$this->format_url($tag, 'tag'), $tag);
 			}
 			$posts[$file]['tags'] = $tags;
 		}
@@ -300,7 +381,7 @@ class Augustus {
 
 	public function render_page($file)
 	{
-		$dest = './build/';
+		$dest = './build';
 
 		$filename = pathinfo($file, PATHINFO_FILENAME);
 		list($date, $slug) = explode('_', $filename);
@@ -318,10 +399,14 @@ class Augustus {
 		$json = (array) json_decode($json);
 		$page_title = $json['title'];
 		$layout = $this->config['template'].'/'.$json['layout'].'.html';
+
+		$tags = $this->tags;
+		$categories = $this->categories;
+
 		if ($this->config['comments'] == 'intensedebate')
 			$intensedebate = $this->config['intensedebate'];
 
-		switch ($json['layout']) {
+/*		switch ($json['layout']) {
 			case 'post':
 				$dest .= "$year/$month/$slug";
 				break;
@@ -329,7 +414,9 @@ class Augustus {
 				$dest .= $json['path']."$slug";
 				break;
 		}
-		
+*/		
+		$dest .= $this->format_url($json, $json['layout']);
+
 		ob_start();
 		include($this->config['template'].'/layout.html');
 		$site = ob_get_contents();
