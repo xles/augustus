@@ -1,5 +1,7 @@
 # Augstus
+`gusto help`
 
+```
 Augustus is a static page generator and blog engine, written in php 5.4
 
 Usage: gusto [options] <command> [<args>].
@@ -19,3 +21,4 @@ Options:
 
 Examples:
    gusto add post
+```
