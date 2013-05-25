@@ -131,7 +131,20 @@ class Augustus {
 			$this->render_page($file);
 			echo '.';
 		}
-		echo "\n";
+		echo "\nRendering index ";
+		$this->render_index('index');
+
+		$json = file_get_contents('./posts/.tags');
+		$json = (array) json_decode($json);
+		foreach ($json as $tag) {
+			$this->render_index('tag', (array) $tag);
+		}
+
+		$json = file_get_contents('./posts/.categories');
+		$json = (array) json_decode($json);
+		foreach ($json as $tag) {
+			$this->render_index('category', (array) $tag);
+		}
 		
 		$files = $this->write_checksums('posts');
 		echo "Finished building site.\n";
@@ -148,9 +161,10 @@ class Augustus {
 		}
 		$files = scandir($dir);
 		foreach ($files as $file) {
-			if ($file[0] != '.')
+			if ($file[0] != '.') {
+				unlink("$dir$file");
 				echo '.';
-				//unlink($dir.$file);
+			}
 		}
 
 	}
@@ -187,6 +201,78 @@ class Augustus {
 			}
 		}
 	}
+	private function render_index($type, $var = '')
+	{
+		$dest = './build/';
+		$layout = $this->config['template'].'/'.$type.'.html';
+
+		switch ($type) {
+			case 'index':
+				$dest .= 'index.html';
+				break;
+			case 'tag':
+				$dest .= "tag/{$var['slug']}.html";
+				$json = file_get_contents('./posts/.tags');
+				$json = (array) json_decode($json);
+				break;
+			case 'category':
+				$dest .= "category/{$var['slug']}.html";
+				$json = file_get_contents('./posts/.categories');
+				$json = (array) json_decode($json);
+				break;
+		}
+
+		$posts = $this->read_index();
+
+		//var_dump($json);
+		if ($type != 'index') {
+			foreach ($var['files'] as $file) {
+				$tmp[$file] = $posts[$file];
+			}
+			$posts = $tmp;
+		}
+
+		ob_start();
+		include($this->config['template'].'/layout.html');
+		$site = ob_get_contents();
+		ob_end_clean();
+
+		file_put_contents($dest, $site);
+
+	}
+	private function read_index()
+	{
+		$json = (array) json_decode(file_get_contents('./posts/.index'));
+		
+		foreach ($json as $file => $data) {
+			unset($tags);
+			
+			$posts[$file] = (array) $data;
+
+			list(	$posts[$file]['year'], 
+				$posts[$file]['month'], 
+				$posts[$file]['day'] 
+			) = explode('-', $posts[$file]['pubdate']);
+			
+			$url = explode('/', $this->config['url_format']);
+			foreach($url as $element) {
+				$posts[$file]['url'] .= '/'.$posts[$file][$element];
+			}
+			$posts[$file]['url'] .= '.html';
+
+			$posts[$file]['category'] = 
+				sprintf('<a href="/category/%s.html">%s</a>', 
+					$this->slug($posts[$file]['category']), 
+					$posts[$file]['category']);
+			foreach ($posts[$file]['tags'] as $tag) {
+				$tags[] = sprintf('<a href="/tag/%s.html">%s</a>', 
+					$this->slug($tag), $tag);
+			}
+			$posts[$file]['tags'] = $tags;
+		}
+		return $posts;
+	}
+
 	public function render_page($file)
 	{
 		$dest = './build/';
@@ -201,7 +287,8 @@ class Augustus {
 		$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
 		list($post, $json) = preg_split($pattern, $buffer);
 
-		$content = $this->prosedown($post);
+		if ($this->config['prosedown'] == "enabled")
+			$content = $this->prosedown($post);
 		$content = Markdown::defaultTransform($content);
 		$json = (array) json_decode($json);
 		$page_title = $json['title'];
@@ -216,8 +303,9 @@ class Augustus {
 				break;
 		}
 		
+
 		ob_start();
-		include_once($this->config['template'].'/layout.html');
+		include($this->config['template'].'/layout.html');
 		$site = ob_get_contents();
 		ob_end_clean();
 
@@ -241,14 +329,17 @@ class Augustus {
 					$tags[$tag]['files'][] = $file;
 					echo '.';
 				}
+				$index[$file] = $json;
 				echo '.';
 			}
 		}
 		echo " OK\n";
 		$cats = json_encode($cats, JSON_PRETTY_PRINT);
 		$tags = json_encode($tags, JSON_PRETTY_PRINT);
+		$index = json_encode($index, JSON_PRETTY_PRINT);
 		if (file_put_contents('./posts/.categories', $cats)  &&
-			file_put_contents('./posts/.tags', $tags))
+			file_put_contents('./posts/.tags', $tags) &&
+			file_put_contents('./posts/.index', $index))
 			return true;
 		else
 			return false;		
