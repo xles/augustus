@@ -14,13 +14,14 @@ Available commands:
    build   Generates the static pages.
    help    Prints this help file.
 
-Options:
+Build options:
    -f   Forced build.  Re-generates all pages regardless of checksum.
    -c   Clean build.  Wipes the build/ directory clean prior to generating
-        static pages.
+        static pages.  Must be used together with -f
 
 Examples:
-   gusto add post
+   gusto add post          Add new post.
+   gusto -cf build         Clean build directory and generate static pages.
 ```
 
 ## Recommended installation and deployment using GitHub Pages, 
