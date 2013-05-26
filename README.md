@@ -7,12 +7,13 @@ Augustus is a static page generator and blog engine, written in php 5.4
 Usage: gusto [options] <command> [<args>].
 
 Available commands:
-   add     Adds new entry to 
-   rm      Remove an entry from
-   edit    Alters an entry in
-   list    Lists entries in
-   build   Generates the static pages.
-   help    Prints this help file.
+   add         Adds new entry to 
+   rm          Remove an entry from
+   edit        Alters an entry in
+   list        Lists entries in
+   build       Generates the static pages.
+   configure   List and set configuration options.
+   help        Prints this help file.
 
 Build options:
    -f   Forced build.  Re-generates all pages regardless of checksum.
