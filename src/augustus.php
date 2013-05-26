@@ -79,7 +79,7 @@ class Augustus {
 			 'slug'     => $this->slug($title), 
 			 'layout'   => 'post'];
 
-		$md  = '#'.$title."\n\nPost goes here\n\n";
+		$md  = "Post goes here\n\n";
 		$md .= "---EOF---\n";
 		$md .= json_encode($json, JSON_PRETTY_PRINT);
 		
@@ -105,7 +105,7 @@ class Augustus {
 			 'layout'   => 'page',
 			 'path'     => $path];
 
-		$md  = '#'.$title."\n\nPost goes here\n\n";
+		$md  = "Post goes here\n\n";
 		$md .= "---EOF---\n";
 		$md .= json_encode($json, JSON_PRETTY_PRINT
 					| JSON_UNESCAPED_SLASHES);
@@ -259,7 +259,7 @@ class Augustus {
 		$files = scandir($template);
 		foreach ($files as $file) {
 			if ($file[0] != '.')
-			if (is_dir("$template/$file".$file)) {
+			if (is_dir("$template/$file")) {
 					if (!file_exists("./build/$file"))
 						mkdir("./build/$file");
 				$this->copy_dir("$template/$file", 
@@ -329,6 +329,7 @@ class Augustus {
 
 		$tags = $this->tags;
 		$categories = $this->categories;
+		$page_url = $this->get_urls();
 
 		if ($type != 'index') {
 			foreach ($var['files'] as $file) {
@@ -336,6 +337,9 @@ class Augustus {
 			}
 			$posts = $tmp;
 		}
+
+		$posts = $this->get_post($posts);
+		krsort($posts);
 
 		ob_start();
 		include($this->config['template'].'/layout.html');
@@ -345,6 +349,38 @@ class Augustus {
 //		echo "$dest\n";
 		$this->output_file($dest, $site);
 		echo '.';
+	}
+	private function get_post($posts)
+	{
+		if (is_array($posts)) {
+			foreach ($posts as $file => $meta) {
+				$buffer = file_get_contents("./posts/$file");
+				$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
+				$content = preg_split($pattern, $buffer)[0];
+				if ($this->config['prosedown'] == "enabled")
+					$content = $this->prosedown($content);
+				$content = Markdown::defaultTransform($content);
+
+				$posts[$file]['content'] = $content;
+			}
+			return $posts;
+		} else {
+			$buffer = file_get_contents("./posts/$posts");
+			$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
+			$content = preg_split($pattern, $buffer)[0];
+			if ($this->config['prosedown'] == "enabled")
+				$content = $this->prosedown($post);
+			$content = Markdown::defaultTransform($content);
+			return $content;
+		}
+	}
+	private function timeago($date)
+	{
+		$time = strtotime($date);
+		$iso = date('r', $time);
+		$hr = date('F jS, Y', $time);
+		$s = "<time class=\"timeago\" datetime=\"$iso\">$hr</time>";
+		return $s;
 	}
 	private function read_index()
 	{
@@ -407,6 +443,26 @@ class Augustus {
 		$tags = $this->tags;
 		$categories = $this->categories;
 
+		$category = [	'title' => $json['category'],
+				'url' => $this->format_url(
+					$this->slug($json['category']),
+					'category'
+				)
+		];
+		$pubdate = $this->timeago($json['pubdate']);
+		$title = $json['title'];
+		
+		if ($json['layout'] == 'post')
+		foreach ($json['tags'] as $tag) {
+			$pt[] = [	'title' => $tag,
+					'url' => $this->format_url(
+						$this->slug($tag), 'tag'
+					)
+				];
+		}
+		$post_tags = $pt;
+		$page_url = $this->get_urls();
+
 		if ($this->config['comments'] == 'intensedebate')
 			$intensedebate = $this->config['intensedebate'];
 
@@ -427,6 +483,17 @@ class Augustus {
 		ob_end_clean();
 
 		$this->output_file($dest, $site);
+	}
+
+	private function get_urls()
+	{
+		$json = file_get_contents('./pages/.index');
+		$json = (array) json_decode($json);
+		foreach ($json as $data) {
+			$data = (array) $data;
+			$urls[$data['slug']] = $data['url'];
+		}
+		return $urls;
 	}
 	public function write_indicies()
 	{
@@ -460,6 +527,17 @@ class Augustus {
 				echo '.';
 			}
 		}
+		$files = scandir('./pages/');
+		foreach ($files as $file) {
+			if ($file[0] != '.') {
+				$tmp = file_get_contents('./pages/'.$file);
+				$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
+				$post = preg_split($pattern, $tmp)[1];
+				$json = (array) json_decode($post);
+				$json['url'] = $this->format_url($json, 'page');
+				$pages[$file] = $json;
+			}
+		}
 		echo " OK\n";
 		$cats = json_encode($cats, JSON_PRETTY_PRINT 
 					 | JSON_UNESCAPED_SLASHES);
@@ -467,10 +545,12 @@ class Augustus {
 					 | JSON_UNESCAPED_SLASHES);
 		$index = json_encode($index, JSON_PRETTY_PRINT
 					   | JSON_UNESCAPED_SLASHES);
+		$pages = json_encode($pages, JSON_PRETTY_PRINT
+					   | JSON_UNESCAPED_SLASHES);
 		if (file_put_contents('./posts/.categories', $cats)  &&
 			file_put_contents('./posts/.tags', $tags) &&
 			file_put_contents('./posts/.index', $index) &&
-			file_put_contents('./pages/.index', $index))
+			file_put_contents('./pages/.index', $pages))
 			return true;
 		else
 			return false;		
