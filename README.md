@@ -59,3 +59,24 @@ with Augustus as a submodule.
 * `git commit -m "Wrote some blog posts"`
 
 * `git push`
+
+
+## F.A.Q.
+
+### What's with the name, where'd "Augustus" and "Gusto" come from?
+
+Isn't it obvious?  [Augustus "Gusto" Gummi][1], the character voiced by 
+[Rob Paulsen][2] in Disney's Adventures of the Gummi Bears.
+
+### Why didn't you just use Jekyll?
+
+Because I don't want to.
+
+### PHP 5.4 isn't widely deployed yet!
+
+That's not really a question, and also it's irrelevant as this is intended
+to be run on your workstation and not on the server. 
+
+[1]: <http://en.wikipedia.org/wiki/Disney%27s_Adventures_of_the_Gummi_Bears#Gummi-Glen>
+
+[2]: <http://en.wikipedia.org/wiki/Rob_Paulsen>
