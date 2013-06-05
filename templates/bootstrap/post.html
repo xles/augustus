@@ -2,7 +2,9 @@
 	<div class="row">
 		<div class="span9">
 			<h1><?=$title?></h1>
-			<?=$content?>
+			<article>
+				<?=$content?>
+			</article>
 			<small>
 			Posted <?=$pubdate?>
 			in <a href="<?=$category['url']?>"><?=$category['title']?></a>
@@ -13,7 +15,7 @@
 			<hr>
 			<?php include('./templates/bootstrap/comments.html'); ?>
 		</div>
-		<div class="span3">
+		<div class="span3 sidebar">
 			<?php include('./templates/bootstrap/sidebar.html'); ?>
 		</div>
 	</div>

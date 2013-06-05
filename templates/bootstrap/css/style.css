@@ -1,0 +1,50 @@
+@import url("bootstrap.css");
+
+body {
+	padding-top: 40px;
+	padding-bottom: 40px;
+	color: #eeeeee;
+	background-color: #213;
+}
+article {
+	padding: 16px;
+	font-family: Georgia, Serif;
+}
+.containern {
+	background-color: #222222;
+}
+a {
+	color: #FF0080;
+	text-decoration: none;
+}
+a:hover,
+a:focus {
+	color: #700030;
+	text-decoration: underline;
+}
+hr {
+	border-top: 1px solid #433;
+	border-bottom: 1px solid #000;
+}
+#copyright {
+	text-align:center;
+	clear:both; 
+	margin: auto;
+	padding:8px;
+	font-size:10px;
+	min-height: 50px;
+/*	background: #ff0000;  */
+}
+p {
+	text-align:justify;
+}
+.sidebar {
+	background-repeat: no-repeat;
+	background-image: url('../img/blankflank.png');
+	background-size: 90%;
+	background-position: center 96px;
+}
+header {
+	padding-bottom: 324px;
+	color: #fff;
+}
