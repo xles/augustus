@@ -337,8 +337,20 @@ class Augustus {
 			}
 			$posts = $tmp;
 		}
-
+		
 		$posts = $this->get_post($posts);
+
+/*		foreach ($posts as $post) {
+			foreach ($post['tags'] as $tag) {
+				$pt[] = ['title' => $tag,
+					 'url' => $this->format_url(
+						$this->slug($tag), 'tag'
+					 )
+					];
+			}
+			$posts[$post]['tags'] = $pt;
+		}
+*/
 		krsort($posts);
 
 		ob_start();
@@ -411,10 +423,16 @@ class Augustus {
 					$posts[$file]['category']
 				);
 			foreach ($posts[$file]['tags'] as $tag) {
-				$tags[] = sprintf('<a href="%s">%s</a>', 
-					$this->tags[$tag]['url'], $tag);
+				$tags[] = ['title' => $tag,
+					   'url' => $this->format_url(
+					 	$this->slug($tag), 'tag'
+					   )
+				];
 			}
 			$posts[$file]['tags'] = $tags;
+
+			$posts[$file]['pubdate'] = 
+				$this->timeago($posts[$file]['pubdate']);
 		}
 		return $posts;
 	}

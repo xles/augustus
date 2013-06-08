@@ -10,7 +10,7 @@
 				in <?=$post['category']?>
 				<br>Tags:
 				<?php foreach ($post['tags'] as $tag): ?>
-					<?=$tag?>, 
+					<a href="<?=$tag['url']?>" class="label"><?=$tag['title']?></a>
 				<?php endforeach; ?>
 				<hr>
 			<?php endforeach; ?>
