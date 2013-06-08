@@ -449,10 +449,10 @@ class Augustus {
 
 		$buffer = file_get_contents($file);
 		$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
-		list($post, $json) = preg_split($pattern, $buffer);
+		list($content, $json) = preg_split($pattern, $buffer);
 
 		if ($this->config['prosedown'] == "enabled")
-			$content = $this->prosedown($post);
+			$content = $this->prosedown($content);
 		$content = Markdown::defaultTransform($content);
 		$json = (array) json_decode($json);
 		$page_title = $json['title'];
