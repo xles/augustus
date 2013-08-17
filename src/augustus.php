@@ -93,7 +93,7 @@ class Augustus {
 
 		printf("E-mail [%s]: ", $config['author']['email']);
 		$author['email'] = trim(fgets(STDIN));
-		if(empty($author['name'])) $author['name'] = $config['author']['name'];
+		if(empty($author['email'])) $author['email'] = $config['author']['email'];
 
 		if(empty($config['atom_id']))
 			$config['atom_id'] = 'tag:'.$url.','.date('Y').':'.md5($title);
@@ -172,8 +172,41 @@ class Augustus {
 
 		exit("Static page saved as $filename.\n");
 	}
+
+	public function check_config()
+	{
+		$config = $this->read_config();
+		if(empty($config['syndication']['atom_id'])) {
+			echo "\e[31mWARNING: You're building on default syndication settings. "
+				."Doing this is inadvisable, as your \e[0m\n"
+				."Would you like to configure them now? "
+				."[\e[32mYes\e[0m] / \e[31mNo\e[0m / \e[33mAbort\e[0m: ";
+			$c = trim(fgets(STDIN));
+			switch (strtolower($c[0])) {
+				case 'n':
+					echo "\e[33mWarning ignored, continuing build\e[0m\n";
+					return true;
+					break;
+				case 'a':
+					return false;
+					break;
+				case 'y':
+				default:
+					$this->configure('syndication');
+					return true;
+					break;
+			}
+		} else {
+			return true;
+		}
+	}
+
 	public function build()
 	{
+		echo "Building in progress...\n\n";
+		if(!$this->check_config()) {
+			exit("\e[33mAborted by user\e[0m.\n\nBuild halted.\n");
+		}
 		if ($this->options['clean'] == true
 			&& $this->options['forced'] == true) {
 			echo "Cleaning up build directory ";
@@ -196,7 +229,7 @@ class Augustus {
 			$this->render_page($file);
 			echo '.';
 		}
-		echo " OK\nRendering index ";
+		echo " \e[32mOK\e[0m\nRendering index ";
 		$this->render_index('index');
 
 		$json = file_get_contents('./posts/.tags');
@@ -216,7 +249,7 @@ class Augustus {
 			$vars['title'] = $tag;
 			$this->render_index('category', $vars);
 		}
-		echo " OK\n";
+		echo " \e[32mOK\e[0m\n";
 		
 		$files = $this->write_checksums('posts');
 		$files = $this->write_checksums('pages');
@@ -616,7 +649,7 @@ class Augustus {
 				$pages[$file] = $json;
 			}
 		}
-		echo " OK\n";
+		echo " \e[32mOK\e[0m\n";
 		$cats = json_encode($cats, JSON_PRETTY_PRINT 
 					 | JSON_UNESCAPED_SLASHES);
 		$tags = json_encode($tags, JSON_PRETTY_PRINT
