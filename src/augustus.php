@@ -23,7 +23,7 @@ class Augustus {
 	private function read_config()
 	{
 		$config = file_get_contents('.config');
-		$config = (array) json_decode($config);
+		$config = json_decode($config, true);
 		return $config;
 	}
 	public function configure($args)
@@ -72,12 +72,16 @@ class Augustus {
 		echo "Tags (separate by commas): ";
 		$tags = array_map('trim',(explode(',', fgets(STDIN))));
 
+		$atom_id = 'tag:'.$this->config['syndication']['url'];
+		$atom_id += ','.$date.':'.md5($title);
+
 		$json = ['title'    => $title,
 			 'category' => $category,
 			 'tags'     => $tags,
 			 'pubdate'  => $date,
 			 'slug'     => $this->slug($title), 
-			 'layout'   => 'post'];
+			 'layout'   => 'post',
+			 'atom_id'  => $atom_id];
 
 		$md  = "Post goes here\n\n";
 		$md .= "---EOF---\n";
@@ -144,35 +148,36 @@ class Augustus {
 		$this->render_index('index');
 
 		$json = file_get_contents('./posts/.tags');
-		$json = (array) json_decode($json);
+		$json = json_decode($json, true);
 		foreach ($json as $tag => $vars) {
-			$vars = (array) $vars;
+			$vars = $vars;
 			$vars['title'] = $tag;
-			$this->render_index('tag', (array) $vars);
+			$this->render_index('tag', $vars);
 		}
 
 		unset($vars);
 
 		$json = file_get_contents('./posts/.categories');
-		$json = (array) json_decode($json);
+		$json = json_decode($json, true);
 		foreach ($json as $tag => $vars) {
-			$vars = (array) $vars;
+			$vars = $vars;
 			$vars['title'] = $tag;
-			$this->render_index('category', (array) $vars);
+			$this->render_index('category', $vars);
 		}
 		echo " OK\n";
 		
 		$files = $this->write_checksums('posts');
 		$files = $this->write_checksums('pages');
+		$this->generate_feeds();
 		echo "\nFinished building site.\n";
 	}
 
 	private function tag_list($type) 
 	{
 		$json = file_get_contents("./posts/.$type");
-		$json = (array) json_decode($json);
+		$json = json_decode($json, true);
 		foreach ($json as $tag => $vars) {
-			$tags[$tag] = (array) $vars;
+			$tags[$tag] = $vars;
 			$tags[$tag]['title'] = $tag;
 		}
 		natcasesort($tags);
@@ -314,13 +319,13 @@ class Augustus {
 			case 'tag':
 				$dest .= $var['url'];
 				$json = file_get_contents('./posts/.tags');
-				$json = (array) json_decode($json);
+				$json = json_decode($json, true);
 				$tag = $var['title'];
 				break;
 			case 'category':
 				$dest .= $var['url'];
 				$json = file_get_contents('./posts/.categories');
-				$json = (array) json_decode($json);
+				$json = json_decode($json, true);
 				$category = $var['title'];
 				break;
 		}
@@ -373,6 +378,8 @@ class Augustus {
 					$content = $this->prosedown($content);
 				$content = Markdown::defaultTransform($content);
 
+				$content = $this->more($content);
+
 				$posts[$file]['content'] = $content;
 			}
 			return $posts;
@@ -396,12 +403,12 @@ class Augustus {
 	}
 	private function read_index()
 	{
-		$json = (array) json_decode(file_get_contents('./posts/.index'));
+		$json = json_decode(file_get_contents('./posts/.index'), true);
 		
 		foreach ($json as $file => $data) {
 			unset($tags);
 			
-			$posts[$file] = (array) $data;
+			$posts[$file] = $data;
 /*
 			list(	$posts[$file]['year'], 
 				$posts[$file]['month'], 
@@ -431,6 +438,7 @@ class Augustus {
 			}
 			$posts[$file]['tags'] = $tags;
 
+			$posts[$file]['date'] = $posts[$file]['pubdate'];
 			$posts[$file]['pubdate'] = 
 				$this->timeago($posts[$file]['pubdate']);
 		}
@@ -454,7 +462,7 @@ class Augustus {
 		if ($this->config['prosedown'] == "enabled")
 			$content = $this->prosedown($content);
 		$content = Markdown::defaultTransform($content);
-		$json = (array) json_decode($json);
+		$json = json_decode($json, true);
 		$page_title = $json['title'];
 		$layout = $this->config['template'].'/'.$json['layout'].'.html';
 
@@ -506,9 +514,9 @@ class Augustus {
 	private function get_urls()
 	{
 		$json = file_get_contents('./pages/.index');
-		$json = (array) json_decode($json);
+		$json = json_decode($json, true);
 		foreach ($json as $data) {
-			$data = (array) $data;
+			$data = $data;
 			$urls[$data['slug']] = $data['url'];
 		}
 		return $urls;
@@ -522,7 +530,7 @@ class Augustus {
 				$tmp = file_get_contents('./posts/'.$file);
 				$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
 				$post = preg_split($pattern, $tmp);
-				$json = (array) json_decode($post[1]);
+				$json = json_decode($post[1], true);
 				$cats[$json['category']]['slug'] = 
 					$this->slug($json['category']);
 				$cats[$json['category']]['url'] =
@@ -551,7 +559,7 @@ class Augustus {
 				$tmp = file_get_contents('./pages/'.$file);
 				$pattern = '/[\n]\s*[-]{2,}\s*EOF\s*[-]{2,}\s*[\n]/s';
 				$post = preg_split($pattern, $tmp)[1];
-				$json = (array) json_decode($post);
+				$json = json_decode($post, true);
 				$json['url'] = $this->format_url($json, 'page');
 				$pages[$file] = $json;
 			}
@@ -572,6 +580,88 @@ class Augustus {
 			return true;
 		else
 			return false;		
+	}
+	public function more($str) {
+		if(!$this->config['more_tag'])
+			return $str;
+		/*
+		$str = dom;
+		inspect dom
+		count p for config:more_tag
+		drop after
+		dom = str
+		*/
+
+
+		return $str; 
+	}
+
+	public function generate_feeds() 
+	{
+		$cfg = $this->config['syndication'];
+		$site_url = 'http://'.$cfg['url'].'/';
+
+		$rss = new \SimpleXMLElement(
+			'<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"></rss>'); 
+		$rss->addChild('channel'); 
+		$rss->channel->addChild('title', $cfg['title']); 
+		$l = $rss->channel->addChild('atom:link', false, 'http://www.w3.org/2005/Atom');
+		$l->addAttribute('href', $site_url.'feed.rss'); 
+		$l->addAttribute('rel', 'self'); 
+		$l->addAttribute('type', 'application/rss+xml'); 
+		$rss->channel->addChild('link', $site_url); 
+		$rss->channel->addChild('description', $cfg['description']);
+		$rss->channel->addChild('lastBuildDate', date(DATE_RSS)); 
+		 
+		$atom = new \SimpleXMLElement(
+			'<feed xmlns="http://www.w3.org/2005/Atom"></feed>'); 
+		$atom->addChild('title', $cfg['title']); 
+		$l = $atom->addChild('link');
+		$l->addAttribute('href', $site_url.'feed.atom'); 
+		$l->addAttribute('rel', 'self'); 
+		$l = $atom->addChild('link');
+		$l->addAttribute('href', $site_url); 
+		$atom->addChild('subtitle', $cfg['description']);
+		$atom->addChild('updated', date(DATE_ATOM)); 
+		$atom->addChild('id', $cfg['atom_id']); 
+
+		/*   'tag:'.$cfg['url'].',date:hash'   */
+		
+		$posts = $this->get_post($this->read_index());
+
+		foreach ($posts as $post) { 
+			$post_url = 'http://'.$cfg['url'].$post['url'];
+			
+			$item = $rss->channel->addChild('item'); 
+			$item->addChild('title', $post['title']); 
+			$item->addChild('link', $post_url);
+			$item->addChild('description', $post['content']); 
+			$item->addChild('pubDate', 
+				date(DATE_RSS, strtotime($post['date']))); 
+			$item->addChild('guid', $post_url); 
+
+			$entry = $atom->addChild('entry');
+			$entry->addChild('title', $post['title']); 
+			$entry->addChild('link');
+			$entry->link->addAttribute('href', $post_url);
+			$entry->addChild('content', $post['content']);
+			$entry->content->addAttribute('type', 'html'); 
+			$entry->addChild('updated', 
+				date(DATE_ATOM, strtotime($post['date']))); 
+			$entry->addChild('id', $post['atom_id']); 
+			$entry->addChild('author');
+			$entry->author->addChild('name', $cfg['author']['name']);
+			$entry->author->addChild('email', $cfg['author']['email']);
+		} 
+
+		if(!file_exists('./build/feed'))
+			mkdir('./build/feed');
+
+		if ($rss->asXML('./build/feed/rss.xml') &&
+				$atom->asXML('./build/feed/atom.xml'))
+			return true;
+		else 
+			return false;
 	}
 	public function write_checksums($dir)
 	{
@@ -607,7 +697,7 @@ class Augustus {
 		}
 
 		$files = file_get_contents($path.'.checksums');
-		$files = (array) json_decode($files);
+		$files = json_decode($files, true);
 
 		$tmp = array_diff(scandir($path), array_keys($files));
 		echo "Checking for new $dir ";
