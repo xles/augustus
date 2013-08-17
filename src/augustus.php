@@ -610,6 +610,8 @@ class Augustus {
 		$cfg = $this->read_config()['syndication'];
 		$urls['atom_feed'] = $cfg['url'].'/feed/atom.xml';
 		$urls['rss_feed'] = $cfg['url'].'/feed/rss.xml';
+		$template = $config['template'];
+		$urls['template_dir'] = "./templates/$template/";
 		return $urls;
 	}
 	public function write_indicies()
