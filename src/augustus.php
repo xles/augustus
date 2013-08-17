@@ -574,6 +574,9 @@ class Augustus {
 		$post_tags = $pt;
 		$page_url = $this->get_urls();
 
+		$site['title'] = $this->config['syndication']['title'];
+		$site['description'] = $this->config['syndication']['description'];
+
 		if ($this->config['comments'] == 'intensedebate')
 			$intensedebate = $this->config['intensedebate'];
 
@@ -604,6 +607,9 @@ class Augustus {
 			$data = $data;
 			$urls[$data['slug']] = $data['url'];
 		}
+		$cfg = $this->read_config()['syndication'];
+		$urls['atom_feed'] = $cfg['url'].'/feed/atom.xml';
+		$urls['rss_feed'] = $cfg['url'].'/feed/rss.xml';
 		return $urls;
 	}
 	public function write_indicies()

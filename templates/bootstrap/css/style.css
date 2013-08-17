@@ -3,13 +3,20 @@
 body {
 	padding-top: 40px;
 	padding-bottom: 40px;
-	color: #eeeeee;
-	background-color: #102;
+}
+p {
+	text-align:justify;
 }
 article {
 	padding: 16px;
-	font-family: Georgia, Serif;
 }
+footer {
+	padding-top: 40px;
+	padding-bottom: 30px;
+	margin-top: 100px;
+	text-align: center;
+	border-top: 1px solid #e5e5e5;
+}/*
 .containern {
 	background-color: #222222;
 }
@@ -25,18 +32,6 @@ a:focus {
 hr {
 	border-top: 1px solid #433;
 	border-bottom: 1px solid #000;
-}
-#copyright {
-	text-align:center;
-	clear:both; 
-	margin: auto;
-	padding:8px;
-	font-size:10px;
-	min-height: 50px;
-/*	background: #ff0000;  */
-}
-p {
-	text-align:justify;
 }
 .sidebar {
 	background-repeat: no-repeat;
@@ -71,3 +66,4 @@ a.badge:focus {
 	text-decoration: none;
 	cursor: pointer;
 }
+*/
