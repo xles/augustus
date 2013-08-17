@@ -26,32 +26,84 @@ class Augustus {
 		$config = json_decode($config, true);
 		return $config;
 	}
+	public function print_array($arr, $level = 0) {
+		foreach ($arr as $key => $val) {
+			for($i=0; $i<$level; $i++)
+				$key = '   '.$key;
+			
+			if(is_array($val)) {	
+				printf("%s:\n",$key);
+				$this->print_array($val, $level+1);
+			}
+			else {
+				printf("%-15s = %s\n", $key, $val);
+			}
+		}	
+	}
 	public function configure($args)
 	{
 		$config = $this->read_config();
 		if (empty($args)) {
 			printf("Current configuration:\n");
-			foreach ($config as $key => $value) {
-				printf("%-15s = %s\n", $key, $value);
-			}
+			$this->print_array($config);
 		} else {
-			if (array_key_exists($args, $config)) {
+			if (!array_key_exists($args, $config)) {
+				echo "Invalid configuration node.\n";
+				return false;
+			} else if($args == 'syndication') {
+				$config['syndication'] = 
+					$this->configure_feeds();
+			} else {
 				printf("New value for %s [%s]: ", 
 					$args, $config[$args]);
 				$conf = trim(fgets(STDIN));
 				if(empty($conf))
 					$conf = $config[$args];
 				$config[$args] = $conf;
-				$config = json_encode($config, 
-						  JSON_PRETTY_PRINT
-						| JSON_UNESCAPED_SLASHES);
-				file_put_contents('.config', $config);
-
-				printf("`%s` set to '%s'.\n", $args, $conf);
-			} else {
-				echo "Invalid configuration node.\n";
 			}
+			$config = json_encode($config, 
+					  JSON_PRETTY_PRINT
+					| JSON_UNESCAPED_SLASHES);
+			file_put_contents('.config', $config);
+
+			printf("`%s` set to '%s'.\n", $args, $conf);
 		}
+	}
+	public function configure_feeds()
+	{
+		$config = $this->read_config()['syndication'];
+
+		echo "Syndication configuration wizard\n\n";
+		printf("Blog Title:\n\"%s\"\n> ", $config['title']);
+		$title = trim(fgets(STDIN));
+		if(empty($title)) $title = $config['title'];
+		
+		printf("Blog description:\n\"%s\"\n> ", $config['description']);
+		$description = trim(fgets(STDIN));
+		if(empty($description)) $description = $config['description'];
+		
+		printf("Domain:\n\"%s\"\n> ", $config['url']);
+		$url = trim(fgets(STDIN));
+		if(empty($url)) $url = $config['url'];
+		
+		echo "Author:\n";
+		printf("Name [%s]: ", $config['author']['name']);
+		$author['name'] = trim(fgets(STDIN));
+		if(empty($author['name'])) $author['name'] = $config['author']['name'];
+
+		printf("E-mail [%s]: ", $config['author']['email']);
+		$author['email'] = trim(fgets(STDIN));
+		if(empty($author['name'])) $author['name'] = $config['author']['name'];
+
+		if(empty($config['atom_id']))
+			$config['atom_id'] = 'tag:'.$url.','.date('Y').':'.md5($title);
+
+		$json = ['title'    => $title,
+			 'description' => $description,
+			 'url'     => $url,
+			 'author'  => $author,
+			 'atom_id'  => $config['atom_id']];
+		return $json;
 	}
 
 	public function new_post()
