@@ -178,7 +178,8 @@ class Augustus {
 	{
 		$config = $this->read_config();
 		if(empty($config['syndication']['atom_id'])) {
-			cprintf(ANSI_COLOR_RED,"WARNING: You're building on default syndication settings. "
+			cprintf(ANSI_COLOR_RED,
+				"WARNING: You're building on default syndication settings. "
 				."Doing this is inadvisable, as your \n");
 			echo "Would you like to configure them now? [";
 			cprintf(ANSI_COLOR_GREEN, "Yes");

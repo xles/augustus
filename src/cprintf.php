@@ -18,20 +18,25 @@
 #define ('COLOR_MAXLEN', 40);
 
 define ('ANSI_COLOR_NORMAL',  	"");
+define ('ANSI_COLOR_START',  	"\033[");
+define ('ANSI_COLOR_END',  	"m");
 define ('ANSI_COLOR_RESET',		"\033[m");
 define ('ANSI_COLOR_BOLD',		"\033[1m");
+
 define ('ANSI_COLOR_RED',		"\033[31m");
 define ('ANSI_COLOR_GREEN',		"\033[32m");
 define ('ANSI_COLOR_YELLOW',		"\033[33m");
 define ('ANSI_COLOR_BLUE',		"\033[34m");
 define ('ANSI_COLOR_MAGENTA',		"\033[35m");
 define ('ANSI_COLOR_CYAN',		"\033[36m");
+
 define ('ANSI_COLOR_BOLD_RED',		"\033[1;31m");
 define ('ANSI_COLOR_BOLD_GREEN',	"\033[1;32m");
 define ('ANSI_COLOR_BOLD_YELLOW',	"\033[1;33m");
 define ('ANSI_COLOR_BOLD_BLUE',		"\033[1;34m");
 define ('ANSI_COLOR_BOLD_MAGENTA',	"\033[1;35m");
 define ('ANSI_COLOR_BOLD_CYAN',		"\033[1;36m");
+
 define ('ANSI_COLOR_BG_RED',		"\033[41m");
 define ('ANSI_COLOR_BG_GREEN',		"\033[42m");
 define ('ANSI_COLOR_BG_YELLOW',		"\033[43m");
@@ -41,6 +46,33 @@ define ('ANSI_COLOR_BG_CYAN',		"\033[46m");
 
 /* A special value meaning "no color selected" */
 #define ANSI_COLOR_NIL "NIL"
+
+#0	All attributes off
+#1	Bold on
+#4	Underscore (on monochrome display adapter only)
+#5	Blink on
+#7	Reverse video on
+#8	Concealed on
+
+#Foreground colors
+#30	Black
+#31	Red
+#32	Green
+#33	Yellow
+#34	Blue
+#35	Magenta
+#36	Cyan
+#37	White
+ 
+#Background colors
+#40	Black
+#41	Red
+#42	Green
+#43	Yellow
+#44	Blue
+#45	Magenta
+#46	Cyan
+#47	White
 
 /*
  * The first three are chosen to match common usage in the code, and what is
@@ -61,6 +93,7 @@ function cprintf() {
 	if (strtoupper(substr(php_uname('s'), 0, 3)) === 'WIN') {
 		vprintf($str, $args);
 	} else {
+
 		echo $color;
 		vprintf($str, $args);
 		echo ANSI_COLOR_RESET;
