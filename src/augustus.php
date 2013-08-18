@@ -2,6 +2,7 @@
 
 namespace Augustus;
 
+require_once('./src/cprintf.php');
 require_once('./src/markdown.php');
 use \Michelf\Markdown;
 
@@ -177,14 +178,20 @@ class Augustus {
 	{
 		$config = $this->read_config();
 		if(empty($config['syndication']['atom_id'])) {
-			echo "\e[31mWARNING: You're building on default syndication settings. "
-				."Doing this is inadvisable, as your \e[0m\n"
-				."Would you like to configure them now? "
-				."[\e[32mYes\e[0m] / \e[31mNo\e[0m / \e[33mAbort\e[0m: ";
+			cprintf(ANSI_COLOR_RED,"WARNING: You're building on default syndication settings. "
+				."Doing this is inadvisable, as your \n");
+			echo "Would you like to configure them now? [";
+			cprintf(ANSI_COLOR_GREEN, "Yes");
+			echo "] / ";
+			cprintf(ANSI_COLOR_RED, "No");
+			echo " / ";
+			cprintf(ANSI_COLOR_YELLOW, "Abort");
+			echo ": ";
 			$c = trim(fgets(STDIN));
 			switch (strtolower($c[0])) {
 				case 'n':
-					echo "\e[33mWarning ignored, continuing build\e[0m\n";
+					cprintf(ANSI_COLOR_YELLOW,
+					 "Warning ignored, continuing build\n");
 					return true;
 					break;
 				case 'a':
@@ -205,7 +212,8 @@ class Augustus {
 	{
 		echo "Building in progress...\n\n";
 		if(!$this->check_config()) {
-			exit("\e[33mAborted by user\e[0m.\n\nBuild halted.\n");
+			cprintf(ANSI_COLOR_YELLOW,"Aborted by user.\n\n");
+			exit("Build halted.\n");
 		}
 		if ($this->options['clean'] == true
 			&& $this->options['forced'] == true) {
@@ -229,7 +237,8 @@ class Augustus {
 			$this->render_page($file);
 			echo '.';
 		}
-		echo " \e[32mOK\e[0m\nRendering index ";
+		cprintf(ANSI_COLOR_GREEN," OK\n");
+		echo "Rendering index ";
 		$this->render_index('index');
 
 		$json = file_get_contents('./posts/.tags');
@@ -249,7 +258,7 @@ class Augustus {
 			$vars['title'] = $tag;
 			$this->render_index('category', $vars);
 		}
-		echo " \e[32mOK\e[0m\n";
+		cprintf(ANSI_COLOR_GREEN," OK\n");
 		
 		$files = $this->write_checksums('posts');
 		$files = $this->write_checksums('pages');
@@ -657,7 +666,7 @@ class Augustus {
 				$pages[$file] = $json;
 			}
 		}
-		echo " \e[32mOK\e[0m\n";
+		cprintf(ANSI_COLOR_GREEN," OK\n");
 		$cats = json_encode($cats, JSON_PRETTY_PRINT 
 					 | JSON_UNESCAPED_SLASHES);
 		$tags = json_encode($tags, JSON_PRETTY_PRINT
